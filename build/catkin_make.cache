@@ -1,0 +1,2 @@
+
+-DCATKIN_DEVEL_PREFIX=/root/tiago_dnf_ws/devel -DCMAKE_INSTALL_PREFIX=/root/tiago_dnf_ws/install -G Unix Makefiles
