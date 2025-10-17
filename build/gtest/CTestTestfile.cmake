@@ -1,6 +1,6 @@
 # CMake generated Testfile for 
 # Source directory: /usr/src/googletest
-# Build directory: /root/tiago_dnf_ws/build/gtest
+# Build directory: /workspaces/fake_tiago_ws/build/gtest
 # 
 # This file includes the relevant testing commands required for 
 # testing this directory and lists subdirectories to be tested as well.

@@ -7,7 +7,7 @@
 # new environment variables
 
 # modified environment variables
-export CMAKE_PREFIX_PATH="/root/tiago_dnf_ws/devel:$CMAKE_PREFIX_PATH"
-export PWD='/root/tiago_dnf_ws/build'
-export ROSLISP_PACKAGE_DIRECTORIES='/root/tiago_dnf_ws/devel/share/common-lisp'
-export ROS_PACKAGE_PATH="/root/tiago_dnf_ws/src:$ROS_PACKAGE_PATH"
+export CMAKE_PREFIX_PATH="/workspaces/fake_tiago_ws/devel:$CMAKE_PREFIX_PATH"
+export PWD='/workspaces/fake_tiago_ws/build'
+export ROSLISP_PACKAGE_DIRECTORIES='/workspaces/fake_tiago_ws/devel/share/common-lisp'
+export ROS_PACKAGE_PATH="/workspaces/fake_tiago_ws/src:$ROS_PACKAGE_PATH"

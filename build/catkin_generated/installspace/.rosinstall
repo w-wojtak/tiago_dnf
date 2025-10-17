@@ -1,2 +1,2 @@
 - setup-file:
-    local-name: /root/tiago_dnf_ws/install/setup.sh
+    local-name: /workspaces/fake_tiago_ws/install/setup.sh

@@ -1,0 +1,43 @@
+<launch>
+    <!-- Trial number selector (default is trial 1) -->
+    <arg name="trial_number" default="1" />
+    
+    <!-- Path to the saved DNF memory files (now includes trial number) -->
+    <arg name="data_path" default="$(find fake_tiago_pkg)/data_basic/trial_$(arg trial_number)" />
+
+    <!-- ======================================================================================= -->
+    <!-- WORLD & VISION SIMULATION                                                               -->
+    <!-- ======================================================================================= -->
+
+    <!-- Reactive AR Publisher (simulates the world state, reacts to robot pickups) -->
+    <node name="fake_ar_publisher_node" pkg="fake_tiago_pkg" type="fake_ar_publisher.py" output="screen" />
+
+    <!-- Vision Bridge (translates AR markers to simple JSON) -->
+    <node name="robot_vision_bridge_node" pkg="fake_tiago_pkg" type="robot_vision_bridge.py" output="screen" />
+          
+    <!-- DNF Input Formatter (translates JSON to DNF-compatible matrices) -->
+    <node name="vision_to_dnf_node" pkg="fake_tiago_pkg" type="vision_to_dnf_node.py" output="screen" />
+
+    <node name="fake_voice_commander" pkg="fake_tiago_pkg" type="fake_voice_commander.py" output="screen" />
+
+    <!-- ======================================================================================= -->
+    <!-- DNF RECALL NODE (The "Brain")                                                          -->
+    <!-- ======================================================================================= -->
+    <node name="dnf_recall_node" pkg="fake_tiago_pkg" type="dnf_model_recall_simple_node.py" output="screen">
+        <param name="trial_number" value="$(arg trial_number)" />
+        <param name="data_path" value="$(arg data_path)" />
+        <param name="sequence_memory_path" value="$(arg data_path)/u_sm.npy" />
+        <param name="duration_field_path"  value="$(arg data_path)/u_d.npy" />
+    </node>
+
+    <!-- ======================================================================================= -->
+    <!-- SIMULATED HUMAN & ROBOT CONTROL                                                         -->
+    <!-- ======================================================================================= -->
+
+    <!-- Fake Human Taker (Simulates the human taking objects at scheduled times) -->
+    <!-- <node name="fake_human_taker" pkg="fake_tiago_pkg" type="fake_human_taker.py" output="screen" /> -->
+
+    <!-- Task Executive (The state machine connecting brain to action) -->
+    <node name="task_executive_node" pkg="fake_tiago_pkg" type="task_executive_node.py" output="screen" />
+
+</launch>

@@ -1,0 +1,88 @@
+# =========================================
+# ROS / Catkin Build System
+# =========================================
+# Standard catkin_make outputs
+/build/
+/devel/
+/install/
+/logs/
+
+# catkin_tools outputs (catkin build)
+/.catkin_workspace
+/build_isolated/
+/devel_isolated/
+
+# ROS log files if they end up in the repo
+*.log
+
+
+# =========================================
+# Data and Experiment Outputs
+# =========================================
+# Keep all raw and generated data out of the repo
+data/
+data_basic/
+
+# Directories for plots or results
+results/
+plots/
+
+# Specific output file types
+*.csv
+*.npy
+# Be careful with .png if you have source images you want to keep.
+# If so, put generated images in a 'plots/' or 'results/' folder.
+# *.png
+
+
+# =========================================
+# Python
+# =========================================
+# Caches and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+
+# =========================================
+# Editor & IDE Settings
+# =========================================
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+
+# =========================================
+# OS & System Files
+# =========================================
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+
+# =========================================
+# Temporary & Backup Files
+# =========================================
+# Vim
+*.swp
+*.swo
+
+# General backup files
+*~
+*.bak

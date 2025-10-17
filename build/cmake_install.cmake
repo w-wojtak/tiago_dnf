@@ -1,8 +1,8 @@
-# Install script for directory: /root/tiago_dnf_ws/src
+# Install script for directory: /workspaces/fake_tiago_ws/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/root/tiago_dnf_ws/install")
+  set(CMAKE_INSTALL_PREFIX "/workspaces/fake_tiago_ws/install")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -49,103 +49,104 @@ endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
-   "/root/tiago_dnf_ws/install/_setup_util.py")
+   "/workspaces/fake_tiago_ws/install/_setup_util.py")
   if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
   if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
-file(INSTALL DESTINATION "/root/tiago_dnf_ws/install" TYPE PROGRAM FILES "/root/tiago_dnf_ws/build/catkin_generated/installspace/_setup_util.py")
+file(INSTALL DESTINATION "/workspaces/fake_tiago_ws/install" TYPE PROGRAM FILES "/workspaces/fake_tiago_ws/build/catkin_generated/installspace/_setup_util.py")
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
-   "/root/tiago_dnf_ws/install/env.sh")
+   "/workspaces/fake_tiago_ws/install/env.sh")
   if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
   if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
-file(INSTALL DESTINATION "/root/tiago_dnf_ws/install" TYPE PROGRAM FILES "/root/tiago_dnf_ws/build/catkin_generated/installspace/env.sh")
+file(INSTALL DESTINATION "/workspaces/fake_tiago_ws/install" TYPE PROGRAM FILES "/workspaces/fake_tiago_ws/build/catkin_generated/installspace/env.sh")
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
-   "/root/tiago_dnf_ws/install/setup.bash;/root/tiago_dnf_ws/install/local_setup.bash")
+   "/workspaces/fake_tiago_ws/install/setup.bash;/workspaces/fake_tiago_ws/install/local_setup.bash")
   if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
   if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
-file(INSTALL DESTINATION "/root/tiago_dnf_ws/install" TYPE FILE FILES
-    "/root/tiago_dnf_ws/build/catkin_generated/installspace/setup.bash"
-    "/root/tiago_dnf_ws/build/catkin_generated/installspace/local_setup.bash"
+file(INSTALL DESTINATION "/workspaces/fake_tiago_ws/install" TYPE FILE FILES
+    "/workspaces/fake_tiago_ws/build/catkin_generated/installspace/setup.bash"
+    "/workspaces/fake_tiago_ws/build/catkin_generated/installspace/local_setup.bash"
     )
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
-   "/root/tiago_dnf_ws/install/setup.sh;/root/tiago_dnf_ws/install/local_setup.sh")
+   "/workspaces/fake_tiago_ws/install/setup.sh;/workspaces/fake_tiago_ws/install/local_setup.sh")
   if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
   if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
-file(INSTALL DESTINATION "/root/tiago_dnf_ws/install" TYPE FILE FILES
-    "/root/tiago_dnf_ws/build/catkin_generated/installspace/setup.sh"
-    "/root/tiago_dnf_ws/build/catkin_generated/installspace/local_setup.sh"
+file(INSTALL DESTINATION "/workspaces/fake_tiago_ws/install" TYPE FILE FILES
+    "/workspaces/fake_tiago_ws/build/catkin_generated/installspace/setup.sh"
+    "/workspaces/fake_tiago_ws/build/catkin_generated/installspace/local_setup.sh"
     )
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
-   "/root/tiago_dnf_ws/install/setup.zsh;/root/tiago_dnf_ws/install/local_setup.zsh")
+   "/workspaces/fake_tiago_ws/install/setup.zsh;/workspaces/fake_tiago_ws/install/local_setup.zsh")
   if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
   if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
-file(INSTALL DESTINATION "/root/tiago_dnf_ws/install" TYPE FILE FILES
-    "/root/tiago_dnf_ws/build/catkin_generated/installspace/setup.zsh"
-    "/root/tiago_dnf_ws/build/catkin_generated/installspace/local_setup.zsh"
+file(INSTALL DESTINATION "/workspaces/fake_tiago_ws/install" TYPE FILE FILES
+    "/workspaces/fake_tiago_ws/build/catkin_generated/installspace/setup.zsh"
+    "/workspaces/fake_tiago_ws/build/catkin_generated/installspace/local_setup.zsh"
     )
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
-   "/root/tiago_dnf_ws/install/setup.fish;/root/tiago_dnf_ws/install/local_setup.fish")
+   "/workspaces/fake_tiago_ws/install/setup.fish;/workspaces/fake_tiago_ws/install/local_setup.fish")
   if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
   if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
-file(INSTALL DESTINATION "/root/tiago_dnf_ws/install" TYPE FILE FILES
-    "/root/tiago_dnf_ws/build/catkin_generated/installspace/setup.fish"
-    "/root/tiago_dnf_ws/build/catkin_generated/installspace/local_setup.fish"
+file(INSTALL DESTINATION "/workspaces/fake_tiago_ws/install" TYPE FILE FILES
+    "/workspaces/fake_tiago_ws/build/catkin_generated/installspace/setup.fish"
+    "/workspaces/fake_tiago_ws/build/catkin_generated/installspace/local_setup.fish"
     )
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
-   "/root/tiago_dnf_ws/install/.rosinstall")
+   "/workspaces/fake_tiago_ws/install/.rosinstall")
   if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
   if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
-file(INSTALL DESTINATION "/root/tiago_dnf_ws/install" TYPE FILE FILES "/root/tiago_dnf_ws/build/catkin_generated/installspace/.rosinstall")
+file(INSTALL DESTINATION "/workspaces/fake_tiago_ws/install" TYPE FILE FILES "/workspaces/fake_tiago_ws/build/catkin_generated/installspace/.rosinstall")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/root/tiago_dnf_ws/build/gtest/cmake_install.cmake")
+  include("/workspaces/fake_tiago_ws/build/gtest/cmake_install.cmake")
+  include("/workspaces/fake_tiago_ws/build/fake_tiago_pkg/cmake_install.cmake")
 
 endif()
 
@@ -157,5 +158,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/root/tiago_dnf_ws/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/workspaces/fake_tiago_ws/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
