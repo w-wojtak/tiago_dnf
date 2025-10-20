@@ -27,7 +27,7 @@ How it works: Uses `simulated_task_executive.py`, which simply waits for a fixed
 To Run:
 ```bash
 # This is the default mode
-roslaunch fake_tiago_pkg recall.launch
+roslaunch fake_tiago_pkg dnf_recall_pipeline.launch
 ```
 
 #### Mode 2: Realistic Tiago Simulation
@@ -39,7 +39,7 @@ How it works: It uses two nodes to simulate the real system:
 
 To Run:
 ```bash
-roslaunch fake_tiago_pkg recall.launch mode:=tiago
+roslaunch fake_tiago_pkg dnf_recall_pipeline.launch mode:=tiago
 ```
 
 ### Running on the Real Tiago Robot
