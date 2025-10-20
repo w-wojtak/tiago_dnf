@@ -4,7 +4,7 @@
 | Phase         | Number of Nodes | Purpose                                   |
 | ------------- | --------------- | ----------------------------------------- |
 | Learning Only | 2               | Demonstrate and learn the task            |
-| Recall Only   | 3               | Execute and adapt based on learned memory |
+| Recall Only   | 5               | Execute and adapt based on learned memory |
 | Both Phases   | 3               | Shared infrastructure (vision pipeline)   |
 
 ### LEARNING-ONLY NODES
@@ -46,11 +46,29 @@ Saves: h_u_amem.npy (trial-specific adaptive memory)
 Fields: 6 (u_act, u_sim, u_wm, u_f1, u_f2, u_error)
 
 
-#### task_executive_node
+#### simulated_task_executive_node
 
-Purpose: translates DNF predictions into robot actions
-Publishes: /simulation/robot_feedback (String)
-Subscribes: /threshold_crossings (Float32MultiArray)
+Role: A simple action executor for simulations.
+Key Feature: Simulates robot actions with a simple time.sleep() delay.
+Mode: Used when mode:=simple (default).
+
+
+#### tiago_task_executive_node
+
+Role: A "bridge" to a real or simulated robot controller.
+Key Feature: Translates a DNF prediction into a multi-step sequence (e.g., move-down, grasp, lift-up).
+Mode: Used when mode:=tiago.
+Publishes: /dxl_input/pos_right (arm commands), /dxl_input/gripper_right (gripper commands).
+Subscribes: /cartesian/right_arm/pose for closed-loop feedback.
+
+
+#### fake_robot_controller_node
+
+Role: A "stunt double" for the real Tiago robot.
+Why Recall Only: Simulates the robot's physical body and low-level controller.
+Key Feature: Listens for commands from tiago_task_executive, waits for a simulated time, and publishes fake pose feedback.
+Mode: Used when mode:=tiago.
+Important: This node should NOT be used with the real robot, as the robot's own drivers serve this purpose.
 
 
 
