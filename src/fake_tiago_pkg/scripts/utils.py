@@ -23,6 +23,30 @@ def load_sequence_memory(data_dir, filename=None):
     print(f"Loaded sequence memory from {filename}")
     return data
 
+
+def load_sequence_memory_extended(data_dir):
+    """
+    Loads the latest u_sm_1 and u_sm_2 sequence memory fields from the data directory
+    using the provided get_latest_file function.
+    """
+    # Load u_sm_1
+    u_sm_1_filepath = get_latest_file(data_dir, "u_sm_1_")
+    if u_sm_1_filepath is None:
+        raise IOError(f"No 'u_sm_1_' files found in the data directory: {data_dir}")
+    
+    u_sm_1_data = np.load(u_sm_1_filepath).flatten()
+    rospy.loginfo(f"✓ Loaded u_sm_1 from {os.path.basename(u_sm_1_filepath)}")
+
+    # Load u_sm_2
+    u_sm_2_filepath = get_latest_file(data_dir, "u_sm_2_")
+    if u_sm_2_filepath is None:
+        raise IOError(f"No 'u_sm_2_' files found in the data directory: {data_dir}")
+        
+    u_sm_2_data = np.load(u_sm_2_filepath).flatten()
+    rospy.loginfo(f"✓ Loaded u_sm_2 from {os.path.basename(u_sm_2_filepath)}")
+    
+    return u_sm_1_data, u_sm_2_data
+
 def load_task_duration(data_dir, filename=None):
     if filename is None:
         files = [f for f in os.listdir(data_dir) if f.startswith("u_d_") and f.endswith('.npy')]
