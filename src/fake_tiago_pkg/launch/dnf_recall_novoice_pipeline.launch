@@ -1,0 +1,59 @@
+<launch>
+    <!-- ======================================================================================= -->
+    <!--                                 CONFIGURATION ARGUMENTS                                 -->
+    <!-- ======================================================================================= -->
+
+    <arg name="mode" default="simple"/>
+    <arg name="trial_number" default="1" />
+    <arg name="base_data_path" default="$(find fake_tiago_pkg)/data_basic" />
+    <arg name="trial_data_path" default="$(find fake_tiago_pkg)/data_basic/trial_$(arg trial_number)" />
+
+
+    <!-- ======================================================================================= -->
+    <!--                             WORLD & VISION SIMULATION (Shared)                            -->
+    <!-- ======================================================================================= -->
+
+    <node name="fake_ar_publisher_node" pkg="fake_tiago_pkg" type="fake_ar_publisher.py" output="screen" />
+    <node name="robot_vision_bridge_node" pkg="fake_tiago_pkg" type="robot_vision_bridge.py" output="screen" />
+          
+    <!-- Using the robust aggregator node that can handle stateful inputs -->
+    <node name="vision_to_dnf_aggregator_node" pkg="fake_tiago_pkg" type="vision_to_dnf_aggregator.py" output="screen" />
+
+    <!-- Simulates human voice commands. -->
+    <node name="fake_voice_commander" pkg="fake_tiago_pkg" type="fake_voice_commander.py" output="screen">
+        <!-- 
+          [THIS IS THE KEY CHANGE]
+          This remap tag tells this node: "Anything you try to publish on the topic 
+          '/voice_command', please publish it on '/parsed_voice_command' instead."
+          This connects the output of the fake commander directly to the input of the aggregator 
+          without changing any Python code.
+        -->
+        <remap from="/voice_command" to="/parsed_voice_command" />
+    </node>
+
+
+    <!-- ======================================================================================= -->
+    <!--                                  DNF RECALL NODE (The Brain)                              -->
+    <!-- ======================================================================================= -->
+    <node name="dnf_recall_node" pkg="fake_tiago_pkg" type="dnf_model_recall_simple_node.py" output="screen">
+        <param name="trial_number" value="$(arg trial_number)" />
+        <param name="base_data_path" value="$(arg base_data_path)" />
+        <param name="trial_data_path" value="$(arg trial_data_path)" />
+        <param name="sequence_memory_path" value="$(arg base_data_path)/u_sm.npy" />
+        <param name="duration_field_path"  value="$(arg base_data_path)/u_d.npy" />
+    </node>
+
+
+    <!-- ======================================================================================= -->
+    <!--              TASK EXECUTION & ROBOT CONTROL (Select based on 'mode')                      -->
+    <!-- ======================================================================================= -->
+    <group if="$(eval arg('mode') == 'simple')">
+        <node name="simulated_task_executive" pkg="fake_tiago_pkg" type="simulated_task_executive.py" output="screen" />
+    </group>
+
+    <group if="$(eval arg('mode') == 'tiago')">
+        <node name="tiago_task_executive" pkg="fake_tiago_pkg" type="tiago_task_executive.py" output="screen" />
+        <node name="fake_robot_controller" pkg="fake_tiago_pkg" type="fake_robot_controller.py" output="screen" />
+    </group>
+
+</launch>

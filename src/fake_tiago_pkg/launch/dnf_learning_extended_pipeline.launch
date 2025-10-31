@@ -21,7 +21,8 @@
     <node name="robot_vision_bridge_node" pkg="fake_tiago_pkg" type="robot_vision_bridge.py" output="screen" />
           
     <!-- DNF Input Formatter (translates JSON to DNF-compatible matrices) -->
-    <node name="vision_to_dnf_node" pkg="fake_tiago_pkg" type="vision_to_dnf_node.py" output="screen" />
+    <!-- <node name="vision_to_dnf_node" pkg="fake_tiago_pkg" type="vision_to_dnf_node.py" output="screen" /> -->
+    <node name="vision_to_dnf_aggregator_node" pkg="fake_tiago_pkg" type="vision_to_dnf_aggregator.py" output="screen" />
 
     <!-- The core DNF learning node -->
     <node name="dnf_model_learning_exteded_node" pkg="fake_tiago_pkg" type="dnf_model_learning_extended_node.py" output="screen" />
