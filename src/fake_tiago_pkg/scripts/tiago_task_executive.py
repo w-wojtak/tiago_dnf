@@ -2,7 +2,7 @@
 import rospy
 import threading
 import math
-from std_msgs.msg import String, Float32MultiArray, Header # <-- ADD Header
+from std_msgs.msg import String, Float32MultiArray
 from geometry_msgs.msg import PoseStamped, PointStamped, Pose, Point, Quaternion
 
 class TiagoTaskExecutive:
@@ -21,22 +21,30 @@ class TiagoTaskExecutive:
         self.PRE_GRASP_HEIGHT = 0.25
         self.HOME_POSE = Pose(position=Point(x=0.3, y=0.0, z=0.4), orientation=default_orientation)
 
-        # Publishers, Subscribers, etc.
+        # --- Publishers ---
         self.pose_cmd_pub = rospy.Publisher('/dxl_input/pos_right', PoseStamped, queue_size=10)
         self.gripper_cmd_pub = rospy.Publisher('/dxl_input/gripper_right', PointStamped, queue_size=10)
         self.pickup_announcement_pub = rospy.Publisher('/simulation/robot_pickup', String, queue_size=10)
         self.robot_feedback_pub = rospy.Publisher('/simulation/robot_feedback', String, queue_size=10)
+
+        # --- Subscribers ---
         rospy.Subscriber('threshold_crossings', Float32MultiArray, self.dnf_prediction_callback)
+        rospy.Subscriber('/cartesian/right_arm/pose', PoseStamped, self.robot_pose_callback)
+        rospy.Subscriber('/manual_robot_feedback', String, self.manual_robot_feedback_callback)
+
+        # --- State ---
         self.current_robot_pose = None
         self.pose_lock = threading.Lock()
-        rospy.Subscriber('/cartesian/right_arm/pose', PoseStamped, self.robot_pose_callback)
+        self.automatic_robot_feedback = False  # default OFF to match real robot behavior
 
         rospy.loginfo("TIAGO Task Executive started. Awaiting DNF predictions and robot pose feedback.")
 
+    # --- Robot pose callback ---
     def robot_pose_callback(self, msg):
         with self.pose_lock:
             self.current_robot_pose = msg.pose
 
+    # --- DNF prediction callback ---
     def dnf_prediction_callback(self, msg):
         if not msg.data: return
         dnf_pos = msg.data[0]
@@ -48,6 +56,7 @@ class TiagoTaskExecutive:
             self._active_thread = threading.Thread(target=self.handle_pickup_sequence, args=(object_name,))
             self._active_thread.start()
 
+    # --- Pickup sequence ---
     def handle_pickup_sequence(self, object_name):
         rospy.loginfo(f"====== STARTING TIAGO PICKUP SEQUENCE FOR '{object_name}' ======")
         target_obj_pose = self.OBJECT_POSES.get(object_name)
@@ -67,29 +76,41 @@ class TiagoTaskExecutive:
             self._move_arm_and_wait(post_grasp_pose)
             self._move_arm_and_wait(self.HOME_POSE)
             rospy.loginfo(f"====== TIAGO PICKUP SEQUENCE FOR '{object_name}' COMPLETE ======")
-            self.pickup_announcement_pub.publish(String(data=object_name))
-            self.robot_feedback_pub.publish(String(data=object_name))
+
+            # Feedback is sent **only manually or if automatic mode is ON**
+            if self.automatic_robot_feedback:
+                self.publish_robot_feedback(object_name)
+
         except Exception as e:
             rospy.logerr(f"CRASH IN TIAGO PICKUP SEQUENCE: {e}")
-    
+
+    # --- Robot feedback publisher ---
+    def publish_robot_feedback(self, object_name):
+        rospy.loginfo(f"Executive: Publishing robot feedback and pickup announcement for '{object_name}'")
+        self.pickup_announcement_pub.publish(String(data=object_name))
+        self.robot_feedback_pub.publish(String(data=object_name))
+
+    # --- Manual feedback callback ---
+    def manual_robot_feedback_callback(self, msg):
+        object_name = msg.data
+        rospy.loginfo(f"Manual feedback received for '{object_name}'")
+        self.publish_robot_feedback(object_name)
+
+    # --- Arm and gripper helpers ---
     def _move_arm_and_wait(self, target_pose, timeout=10.0):
         rospy.loginfo(f"Executive: Commanding arm to z={target_pose.position.z:.2f}")
-        
-        # === START OF CORRECTION ===
         pose_msg = PoseStamped()
         pose_msg.header.stamp = rospy.Time.now()
         pose_msg.header.frame_id = 'base_link'
         pose_msg.pose = target_pose
-        # === END OF CORRECTION ===
-
         self.pose_cmd_pub.publish(pose_msg)
-        
+
         start_time = rospy.Time.now()
         rate = rospy.Rate(10)
         while (rospy.Time.now() - start_time).to_sec() < timeout:
             with self.pose_lock:
                 if self.current_robot_pose is None:
-                    rospy.logwarn_throttle(2.0, "Waiting for first robot pose feedback on /cartesian/right_arm/pose...")
+                    rospy.logwarn_throttle(2.0, "Waiting for first robot pose feedback...")
                     rate.sleep()
                     continue
                 dist = math.sqrt(sum([(getattr(self.current_robot_pose.position, axis) - getattr(target_pose.position, axis))**2 for axis in 'xyz']))
@@ -101,13 +122,9 @@ class TiagoTaskExecutive:
 
     def _set_gripper_and_wait(self, state, delay=1.5):
         rospy.loginfo(f"Executive: Commanding gripper to '{state}'.")
-        
-        # === START OF CORRECTION ===
         gripper_msg = PointStamped()
         gripper_msg.header.stamp = rospy.Time.now()
         gripper_msg.point = Point(x=1.0 if state == "open" else 0.0, y=0.0, z=0.0)
-        # === END OF CORRECTION ===
-
         self.gripper_cmd_pub.publish(gripper_msg)
         rospy.sleep(delay)
         rospy.loginfo(f"Executive: Gripper action '{state}' complete.")

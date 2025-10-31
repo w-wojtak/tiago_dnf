@@ -10,7 +10,7 @@ class HumanActionSimulator:
         # The timings are NOT uniform to be more realistic.
         self.pickup_schedule = [
             ('base', 16.0),      # First pickup at t=16s
-            ('load', 26.0),     # Next pickup  
+            ('load', 26),     # Next pickup  
             ('bearing', 34.0),  # Next pickup  
             ('motor', 43.0)     # Final pickup  
         ]
