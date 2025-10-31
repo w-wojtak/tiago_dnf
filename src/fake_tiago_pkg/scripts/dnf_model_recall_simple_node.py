@@ -77,8 +77,8 @@ class DNFRecallNode:
     # ------------------ Setup helpers ------------------
     def _init_plots(self):
         plt.ion()
-        self.fig, axes = plt.subplots(2, 3, figsize=(15, 9))
-        self.ax1, self.ax2, self.ax3, self.ax4, self.ax5, self.ax6 = axes.flatten()
+        self.fig, axes = plt.subplots(2, 2, figsize=(15, 9))
+        self.ax1, self.ax2, self.ax3, self.ax4 = axes.flatten()
 
         object_positions = [-60, -40, -20, 0, 20, 40, 60]
         object_labels = ['base', 'blue box', 'load', 'tool 1', 'bearing', 'motor', 'tool 2']
@@ -88,19 +88,19 @@ class DNFRecallNode:
 
         # Pass the new xlim argument to each call
         self.ax1 = format_axis(self.ax1, "Action Onset Field", "u_act(x)", object_positions, object_labels, xlim=desired_xlim)
-        self.ax2 = format_axis(self.ax2, "Simulation Field", "u_sim(x)", object_positions, object_labels, xlim=desired_xlim)
-        self.ax3 = format_axis(self.ax3, "Working Memory Field", "u_wm(x)", object_positions, object_labels, xlim=desired_xlim)
-        self.ax4 = format_axis(self.ax4, "Feedback 1 Field", "u_f1(x)", object_positions, object_labels, xlim=desired_xlim)
-        self.ax5 = format_axis(self.ax5, "Feedback 2 Field", "u_f2(x)", object_positions, object_labels, xlim=desired_xlim)
-        self.ax6 = format_axis(self.ax6, "Error Field", "u_error(x)", object_positions, object_labels, xlim=desired_xlim)
+        # self.ax2 = format_axis(self.ax2, "Simulation Field", "u_sim(x)", object_positions, object_labels, xlim=desired_xlim)
+        self.ax2 = format_axis(self.ax2, "Working Memory Field", "u_wm(x)", object_positions, object_labels, xlim=desired_xlim)
+        self.ax3 = format_axis(self.ax3, "Feedback 1 Field", "u_f1(x)", object_positions, object_labels, xlim=desired_xlim)
+        self.ax4 = format_axis(self.ax4, "Feedback 2 Field", "u_f2(x)", object_positions, object_labels, xlim=desired_xlim)
+        # self.ax6 = format_axis(self.ax6, "Error Field", "u_error(x)", object_positions, object_labels, xlim=desired_xlim)
 
         # Initialize line objects
         self.line_act, = self.ax1.plot(self.x, np.zeros_like(self.x), label="u_act")
-        self.line_sim, = self.ax2.plot(self.x, np.zeros_like(self.x), label="u_sim")
-        self.line_wm, = self.ax3.plot(self.x, np.zeros_like(self.x), label="u_wm")
-        self.line_f1, = self.ax4.plot(self.x, np.zeros_like(self.x), label="u_f1")
-        self.line_f2, = self.ax5.plot(self.x, np.zeros_like(self.x), label="u_f2")
-        self.line_error, = self.ax6.plot(self.x, np.zeros_like(self.x), label="u_error")
+        # self.line_sim, = self.ax2.plot(self.x, np.zeros_like(self.x), label="u_sim")
+        self.line_wm, = self.ax2.plot(self.x, np.zeros_like(self.x), label="u_wm")
+        self.line_f1, = self.ax3.plot(self.x, np.zeros_like(self.x), label="u_f1")
+        self.line_f2, = self.ax4.plot(self.x, np.zeros_like(self.x), label="u_f2")
+        # self.line_error, = self.ax6.plot(self.x, np.zeros_like(self.x), label="u_error")
 
         plt.tight_layout()
         plt.show(block=False)
@@ -298,11 +298,11 @@ class DNFRecallNode:
         try:
             with self.data_lock:
                 self.line_act.set_ydata(self.u_act)
-                self.line_sim.set_ydata(self.u_sim)
+                # self.line_sim.set_ydata(self.u_sim)
                 self.line_wm.set_ydata(self.u_wm)
                 self.line_f1.set_ydata(self.u_f1)
                 self.line_f2.set_ydata(self.u_f2)
-                self.line_error.set_ydata(self.u_error)
+                # self.line_error.set_ydata(self.u_error)
                 self.fig.canvas.draw_idle()
                 self.fig.canvas.flush_events()
         except Exception as e:
@@ -431,10 +431,9 @@ class DNFRecallNode:
                 rospy.loginfo(f"{field_name} threshold crossings: {times_str}")
 
             # --- Plot time-courses (4 panels vertically stacked) ---
-            fig, axes = plt.subplots(4, 1, figsize=(10, 10), sharex=True)
+            fig, axes = plt.subplots(3, 1, figsize=(10, 10), sharex=True)
             field_data = [
                 (u_act_history, theta_act, "u_act"),
-                (u_sim_history, theta_sim, "u_sim"),
                 (u_f1_history, theta_f, "u_f1 (robot)"),
                 (u_f2_history, theta_f, "u_f2 (human)"),
             ]
@@ -447,12 +446,11 @@ class DNFRecallNode:
                 ax.grid(True)
                 ax.legend()
 
-            ax1, ax2, ax3, ax4 = axes
+            ax1, ax2, ax3 = axes
 
             ax1.set_ylim(-5, 5)
             ax2.set_ylim(-5, 5)
             ax3.set_ylim(-5, 5)
-            ax4.set_ylim(-5, 5)
 
             axes[-1].set_xlabel("Time (s)")
             fig.suptitle("Field Activity Over Time", fontsize=14)

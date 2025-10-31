@@ -1,2 +1,2 @@
-fake_tiago_pkg
+ar_track_alvar/ar_track_alvar:ar_track_alvar/ar_track_alvar_msgs:fake_tiago_pkg
 -DCATKIN_DEVEL_PREFIX=/workspaces/fake_tiago_ws/devel -DCMAKE_INSTALL_PREFIX=/workspaces/fake_tiago_ws/install -G Unix Makefiles

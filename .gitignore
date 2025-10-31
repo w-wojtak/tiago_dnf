@@ -22,6 +22,7 @@
 # Keep all raw and generated data out of the repo
 data/
 data_basic/
+data_extended/
 
 # Directories for plots or results
 results/
