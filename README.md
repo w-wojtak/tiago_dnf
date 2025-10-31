@@ -209,6 +209,33 @@ Feedback (to both the DNF and the vision system) is sent **manually** or automat
 *   **Publishes:**  
     * `/cartesian/right_arm/pose` (`PoseStamped`) – continuous simulated arm pose feedback. 
 
+
+
+#### udp_listener_node
+
+* **Role:** Listens for UDP voice commands and publishes them to ROS.  
+* **Publishes:** `/voice_message` (`std_msgs/String`) — recognized voice command.  
+* **Receives:** UDP messages on port `5005` (commands like `give_motor`, `give_load`, etc.).  
+* **Sends:** UDP confirmations to `10.205.240.222:5006`.  
+* **Notes:** Each command can be published up to `REPEAT_COUNT` times.  
+* **Dependencies:** `rospy`, `std_msgs`, `socket`, `threading`.
+
+### Parameters
+| Variable | Description | Default |
+|-----------|--------------|----------|
+| `REPEAT_COUNT` | Maximum number of times each command can be published | `2` |
+
+
+#### udp_response_sender_node
+
+* **Role:** Sends ROS string messages as UDP packets to a target IP and port.  
+* **Subscribes:** `/response_command` (`std_msgs/String`) — response message to send.  
+* **Sends:** UDP packets to `target_ip:target_port` (default `127.0.0.1:5006`).  
+* **Dependencies:** `rospy`, `std_msgs`, `socket`.  
+
+
+
+
 ### NODES USED IN BOTH PHASES
 
 #### fake_ar_publisher_node
@@ -233,3 +260,4 @@ Feedback (to both the DNF and the vision system) is sent **manually** or automat
     *   `/manual_robot_feedback` (manual robot feedback for testing).  
     *   `/parsed_voice_command` (human voice commands).  
     *   `/response_command` (resets active human voice inputs (after error, so the next one is possible)).
+
