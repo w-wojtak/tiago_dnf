@@ -2,6 +2,9 @@
 
 import rospy
 from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import String
+import time
+import re
 import numpy as np
 import matplotlib.pyplot as plt
 import threading
@@ -43,6 +46,8 @@ class DNFRecallNode:
         # Publisher for threshold crossings
         self.publisher = rospy.Publisher('threshold_crossings', Float32MultiArray, queue_size=10)
 
+        self.response_pub = rospy.Publisher('/response_command', String, queue_size=5)
+
         # --- Plotting ---
         self._init_plots()
 
@@ -56,12 +61,18 @@ class DNFRecallNode:
         
         self._load_data(self.base_data_path)
 
+        # cooldown to prevent repeating the same message too often
+        self.error_last_sent = {pos: 0.0 for pos in self.input_positions}
+        self.error_cooldown = 100.0  # seconds between messages per object
+
         # --- Field initialization ---
         self._init_fields()
 
         # --- History containers ---
         self.u_act_history, self.u_sim_history = [], []
         self.u_wm_history, self.u_f1_history, self.u_f2_history, self.u_error_history = [], [], [], []
+
+        self.error_threshold_crossed = {pos: False for pos in self.input_positions}
 
         # --- Subscribers and timers ---
         self.subscription = rospy.Subscriber(
@@ -73,6 +84,13 @@ class DNFRecallNode:
         
         # Register shutdown hook
         rospy.on_shutdown(self.save_all_data)
+
+
+    def sanitize_for_tts(self, text):
+        """Keep the message clean and short for TTS."""
+        text = re.sub(r"[^A-Za-z0-9 ,.'!?-]", "", text)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text[:200]
 
     # ------------------ Setup helpers ------------------
     def _init_plots(self):
@@ -202,6 +220,13 @@ class DNFRecallNode:
         # Threshold tracker
         self.threshold_crossed = {pos: False for pos in [-60, -20, 20, 40]}
 
+
+    def get_closest_object_label(self, pos):
+        object_positions = [-60, -40, -20, 0, 20, 40, 60]
+        object_labels = ['base', 'blue box', 'load', 'tool 1', 'bearing', 'motor', 'tool 2']
+        idx = np.argmin(np.abs(np.array(object_positions) - pos))
+        return object_labels[idx]
+
     # ------------------ ROS Callbacks ------------------
     def process_inputs(self, msg):
         """
@@ -268,7 +293,7 @@ class DNFRecallNode:
             self.u_wm += self.dt * (-self.u_wm + conv_wm + 6*((conv_f1*self.u_f1)*(conv_f2*self.u_f2)) + self.h_u_wm)
             self.u_f1 += self.dt * (-self.u_f1 + conv_f1 + self.input_robot_feedback + self.h_f - 2*conv_wm)
             self.u_f2 += self.dt * (-self.u_f2 + conv_f2 + self.input_human_voice + self.h_f - 2*conv_wm)
-            self.u_error += self.dt * (-self.u_error + conv_error + self.h_f - 4*conv_sim*f_sim + (0.5*self.u_f2*f_uf2))
+            self.u_error += self.dt * (-self.u_error + conv_error + self.h_f - 4*conv_sim*f_sim + (0.8*self.u_f2*f_uf2))
 
             # Update adaptive memory (this will be saved for next trial)
             # self.h_u_amem += self.beta_adapt*(1 - (conv_f2*conv_f1))*(conv_f1 - conv_f2)
@@ -296,6 +321,51 @@ class DNFRecallNode:
                     msg.data = [float(pos)]
                     self.publisher.publish(msg)
                     self.threshold_crossed[pos] = True
+
+
+            # # Map input_positions to object labels
+            object_positions = [-60, -40, -20, 0, 20, 40, 60]
+            object_labels = ['base', 'blue box', 'load', 'tool 1', 'bearing', 'motor', 'tool 2']
+
+            # # Function to get closest object label
+            # def get_closest_object_label(pos):
+            #     idx = np.argmin(np.abs(np.array(object_positions) - pos))
+            #     return object_labels[idx]
+
+            # def get_closest_object_label(self, pos):
+            #     object_positions = [-60, -40, -20, 0, 20, 40, 60]
+            #     object_labels = ['base', 'blue box', 'load', 'tool 1', 'bearing', 'motor', 'tool 2']
+            #     idx = np.argmin(np.abs(np.array(object_positions) - pos))
+            #     return object_labels[idx]
+
+
+            # --- u_error threshold detection with correct object from u_sim ---
+            for i, idx in enumerate(self.input_indices):
+                pos = self.input_positions[i]
+                if not self.error_threshold_crossed[pos] and self.u_error[idx] > self.theta_error:
+                    # Determine correct object from u_sim
+                    correct_idx = np.argmax(self.u_sim)
+                    correct_pos = self.x[correct_idx]
+                    object_name = None
+                    for label, obj_pos in zip(object_labels, object_positions):
+                        if np.isclose(obj_pos, correct_pos, atol=2.0):
+                            object_name = label
+                            break
+
+                    wrong_obj = self.get_closest_object_label(pos)
+
+                    msg_text = f"ERROR: '{wrong_obj}' is not correct, you should use '{object_name}'"
+                    rospy.loginfo(msg_text)
+
+                    # --- Publish to /response_command ---
+                    ros_msg = String()
+                    ros_msg.data = msg_text
+                    self.response_pub.publish(ros_msg)
+
+                    # Mark as sent
+                    self.error_threshold_crossed[pos] = True
+
+
 
     # ------------------ Plotting ------------------
     def update_plot(self):

@@ -21,6 +21,12 @@ class DNFLearningNode:
         self.t = np.arange(0, self.t_lim + self.dt, self.dt)
         self.input_positions = [-60, -20, 20, 40]
 
+        self.input_indices_sm = [np.argmin(np.abs(self.x - pos)) for pos in self.input_positions]
+        self.center_index = int(len(self.x) / 2)
+
+        self.u_sm_history = []  # list of lists (each timestep)
+        self.u_d_history = []
+
         # Sequence memory field
         self.h_0_sm, self.tau_h_sm, self.theta_sm = 0, 20, 1.5
         self.kernel_pars_sm = (1, 0.7, 0.9)
@@ -90,7 +96,13 @@ class DNFLearningNode:
             conv_sm = self.dx * np.fft.ifftshift(np.real(np.fft.ifft(np.fft.fft(f_sm) * self.w_hat_sm)))
             self.h_u_sm += self.dt / self.tau_h_sm * f_sm
             self.u_sm += self.dt * (-self.u_sm + conv_sm + input1 + self.h_u_sm)
-            
+
+            # Track values over time
+            u_sm_values = [self.u_sm[idx] for idx in self.input_indices_sm]
+            u_d_value = self.u_d[self.center_index]
+            self.u_sm_history.append(u_sm_values)
+            self.u_d_history.append(u_d_value)
+
             # Signal that plot needs update
             self.plot_needs_update = True
 
@@ -204,6 +216,54 @@ class DNFLearningNode:
             with self.data_lock:
                 np.save(os.path.join(data_dir, f"u_sm_{timestamp}.npy"), self.u_sm)
                 np.save(os.path.join(data_dir, f"u_d_{timestamp}.npy"), self.u_d)
+
+            # Convert lists to arrays
+            u_sm_history = np.array(self.u_sm_history)
+            u_d_history = np.array(self.u_d_history)
+            timesteps = np.arange(len(u_sm_history)) # to have time in seconds
+            # timesteps = np.arange(len(u_sm_history)) * self.dt
+            theta = self.theta_sm  # or pick one depending on what threshold you want
+
+            # Compute crossing times
+            for i, pos in enumerate(self.input_positions):
+                above = u_sm_history[:, i] >= theta
+                if np.any(above):
+                    crossing_idx = np.argmax(above)
+                    rospy.loginfo(f"u_sm at x={pos} crosses theta at time {crossing_idx * self.dt:.2f}s")
+
+            above = u_d_history >= self.theta_d
+            if np.any(above):
+                crossing_idx = np.argmax(above)
+                rospy.loginfo(f"u_d at x=0 crosses theta at time {crossing_idx * self.dt:.2f}s")
+
+            # Plot histories
+            fig, axs = plt.subplots(2, 1, figsize=(12, 8), sharex=False)
+
+            # Plot u_sm
+            for i, pos in enumerate(self.input_positions):
+                axs[0].plot(timesteps, u_sm_history[:, i], label=f'x = {pos}')
+            axs[0].axhline(theta, color='r', linestyle='--', label=f'theta = {theta}')
+            axs[0].set_ylabel('u_sm')
+            axs[0].set_ylim(-1, 5)
+            axs[0].legend()
+            axs[0].grid(True)
+
+            # Plot u_d
+            axs[1].plot(timesteps, u_d_history, label='x = 0')
+            axs[1].axhline(self.theta_d, color='r', linestyle='--', label=f'theta = {self.theta_d}')
+            axs[1].set_ylabel('u_d')
+            axs[1].set_xlabel('Time [s]')
+            axs[1].set_ylim(0, 5)
+            axs[1].legend()
+            axs[1].grid(True)
+
+            # Save the time-course figure
+            timecourse_path = os.path.join(data_dir, f"timecourse_{timestamp}.png")
+            fig.savefig(timecourse_path, dpi=150, bbox_inches='tight')
+            plt.close(fig)
+
+            rospy.loginfo(f"Saved time-course plot at {timecourse_path}")
+
             
             # Save final plot
             self.fig.savefig(os.path.join(data_dir, f"final_plot_{timestamp}.png"), 
