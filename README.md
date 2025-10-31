@@ -4,6 +4,7 @@
 *   ROS Noetic
 *   Python 3
 *   `rospy`, `numpy`, `scipy`
+*   `matplotlib` (for plotting and visualization; requires a GUI backend such as `TkAgg` or `Qt5Agg`)
 *   `ar_track_alvar`: The `fake_ar_publisher_node` publishes messages of this type to simulate the real `ar_track_alvar` package.
 
 ### Phase 1: Learning the Task
@@ -86,11 +87,11 @@ In the main launch file that starts the Tiago drivers and OpenSOT, the DNF nodes
 
 ### OVERVIEW OF NODES
 
-| Phase         | Number of Nodes | Purpose                                   |
-| ------------- | --------------- | ----------------------------------------- |
-| Learning Only | 2               | Demonstrate and learn the task            |
-| Recall Only   | 5               | Execute and adapt based on learned memory |
-| Both Phases   | 3               | Shared infrastructure (vision pipeline)   |
+| Phase          | Purpose                                   |
+| -------------  | ----------------------------------------- |
+| Learning Only  | Demonstrate and learn the task            |
+| Recall Only    | Execute and adapt based on learned memory |
+| Both Phases    | Shared infrastructure (vision and voice pipeline)   |
 
 ### LEARNING-ONLY NODES
 
@@ -98,7 +99,7 @@ In the main launch file that starts the Tiago drivers and OpenSOT, the DNF nodes
 
 *   **Role:** Simulates the expert human demonstrator.
 *   **Why Learning Only:** In recall, the robot acts autonomously; no human demonstration is needed.
-*   **Publishes:** `/simulation/human_pickup`
+*   **Publishes:** `/simulation/human_pickup` (`String`, object name). 
 *   **Key Feature:** Scheduled pickup times to drive the demonstration.
 
 #### dnf_model_learning_simple_node (the "brain" of the architecture)
@@ -110,43 +111,103 @@ In the main launch file that starts the Tiago drivers and OpenSOT, the DNF nodes
 
 ### RECALL-ONLY NODES
 
-#### fake_voice_commander
 
-*   **Role:** Simulates human verbal cues to test the system's adaptability.
-*   **Why Recall Only:** Used to communicate that the human is waiting for the robot's action.
-*   **Publishes:** `/voice_command`
-*   **Input Type:** Generates permanent Gaussians in the DNF input.
-
-#### dnf_model_recall_simple_node (the "brain" of the architecture)
+#### dnf_model_recall_simple_node (the "brain" of the architecture), and
+#### dnf_model_recall_extended_node
 
 *   **Role:** Predicts the next action using learned memory. This is the "performer" that executes the learned task.
 *   **Subscribes:** `/dnf_inputs`
 *   **Publishes:** `/threshold_crossings` (predictions).
-*   **Loads:** `u_sm.npy`, `u_d.npy`, `h_u_amem.npy`.
+*   **Loads:** `u_sm.npy` (or u_sm1 and u_sm2 in extended version), `u_d.npy`, `h_u_amem.npy`.
 *   **Saves:** `h_u_amem.npy` (trial-specific adaptive memory).
-*   **Fields:** 6 (u_act, u_sim, u_wm, u_f1, u_f2, u_error).
+*   **Fields:** 4 (u_act, u_wm, u_f1, u_f2) or 6 (+ u_sim and u_error).
+
+#### fake_voice_commander
+
+*   **Role:** Simulates human voice commands by publishing scheduled object requests.  
+*   **Publishes:** `/voice_command` (`String`) – requested object name (e.g., `"base"`, `"motor"`).  
+    * *( remapped to `/parsed_voice_command` in launch files.)*  
+*   **Subscribes:** —  
+
+**Description:**  
+The **Fake Voice Commander Node** mimics a human issuing verbal requests for objects at specific times.  
+Each scheduled command publishes the object name as a string, optionally remapped to match the downstream input of the DNF aggregator or task executive.  
+Used for automated testing without real speech input.
+
+#### voice_command_parser_node
+
+*   **Role:** Parses raw voice messages into standardized object names.  
+*   **Subscribes:** `/voice_message` (`String`) – raw voice command (e.g., `"give_motor"`).  
+*   **Publishes:** `/parsed_voice_command` (`String`) – parsed object name (e.g., `"motor"`).  
+
+**Description:**  
+This node listens for raw spoken or textual commands referring to objects (e.g., `"give_motor"`, `"give_base"`).  
+It converts them into simplified object identifiers (`"motor"`, `"base"`, etc.) that downstream nodes (e.g., robot controllers) can easily interpret.
+
+**Mapping:**  
+| Command         | Parsed Object |
+|-----------------|----------------|
+| `give_motor`    | `motor`        |
+| `give_load`     | `load`         |
+| `give_bearing`  | `bearing`      |
+| `give_base`     | `base`         |
+
+**Behavior:**  
+If an unrecognized command contains one of the known object names (e.g., `"please give the motor"`), it will still correctly extract `"motor"`.  
+Otherwise, it logs a warning and ignores the message.
 
 #### simulated_task_executive_node
 
-*   **Role:** A **simple** action executor for fast simulations.
+*   **Role:** A simple action executor based on predictions from DNFs.  
 *   **Key Feature:** Simulates robot actions with a simple `time.sleep()` delay.
 *   **Mode:** Used when `mode:=simple` (default).
+*   **Subscribes:** `threshold_crossings` (`Float32MultiArray`) – position(s) where the DNF predicts an action onset.  
+*   **Publishes:**  
+    * `/simulation/robot_pickup` (`String`) – informs the vision system that an object has been picked up (for “vis” input).  
+    * `/simulation/robot_feedback` (`String`) – provides robot feedback to the DNF (for “rob” input).  
+
+**Description:**  
+The **Task Executive Node** listens for DNF-predicted action triggers and coordinates simulated robot behavior accordingly.  
+When a DNF prediction is received, it identifies which object the prediction refers to based on a predefined spatial mapping (`DNF_POS_TO_OBJECT`), then simulates the robot’s response with a time delay.
+
 
 #### tiago_task_executive_node
 
 *   **Role:** A **realistic "bridge"** to a real or simulated robot controller.
 *   **Key Feature:** Translates a DNF prediction into a multi-step sequence (e.g., move-down, grasp, lift-up).
 *   **Mode:** Used when `mode:=tiago`.
-*   **Publishes:** `/dxl_input/pos_right` (arm commands), `/dxl_input/gripper_right` (gripper commands).
-*   **Subscribes:** `/cartesian/right_arm/pose` for closed-loop feedback.
+*   **Subscribes:**  
+    * `threshold_crossings` (`Float32MultiArray`) – DNF action predictions.  
+    * `/cartesian/right_arm/pose` (`PoseStamped`) – real-time robot arm pose feedback.  
+    * `/manual_robot_feedback` (`String`) – allows manual triggering of feedback messages.  
+*   **Publishes:**  
+    * `/dxl_input/pos_right` (`PoseStamped`) – target arm poses for movement.  
+    * `/dxl_input/gripper_right` (`PointStamped`) – gripper open/close commands.  
+    * `/simulation/robot_pickup` (`String`) – notifies the vision system that an object has been picked up.  
+    * `/simulation/robot_feedback` (`String`) – provides robot feedback to the DNF.  
+
+**Description:**  
+The **TIAGo Task Executive Node** coordinates arm and gripper control for object pickup actions triggered by DNF predictions.  
+When a threshold crossing occurs, it maps the DNF position to an object, retrieves the corresponding 3D pose, and executes a predefined pickup sequence:  
+1. Move to pre-grasp height.  
+2. Approach and grasp the object.  
+3. Return to home position.  
+
+Feedback (to both the DNF and the vision system) is sent **manually** or automatically if `automatic_robot_feedback = True`.
+
 
 #### fake_robot_controller_node
 
-*   **Role:** A **"stunt double"** for the real Tiago robot.
+*   **Role:** A **"stunt double"** for the real Tiago robot. Simulates a simple robot arm and gripper for testing  task logic. 
 *   **Why Recall Only:** Simulates the robot's physical body and low-level controller.
 *   **Key Feature:** Listens for commands from `tiago_task_executive`, waits for a simulated time, and publishes fake pose feedback.
 *   **Mode:** Used when `mode:=tiago`.
 *   **Important:** This node should **NOT** be used with the real robot, as the robot's own drivers serve this purpose.
+*   **Subscribes:**  
+    * `/dxl_input/pos_right` (`PoseStamped`) – target arm pose commands.  
+    * `/dxl_input/gripper_right` (`PointStamped`) – gripper open/close commands.  
+*   **Publishes:**  
+    * `/cartesian/right_arm/pose` (`PoseStamped`) – continuous simulated arm pose feedback. 
 
 ### NODES USED IN BOTH PHASES
 
@@ -162,14 +223,13 @@ In the main launch file that starts the Tiago drivers and OpenSOT, the DNF nodes
 *   **Publishes:** `/object_detections` (String, JSON).
 *   **Subscribes:** AR marker topic from `fake_ar_publisher`.
 
-#### vision_to_dnf_node
+#### vision_to_dnf_aggregator_node
 
-*   **Role:** Converts object detections into DNF-compatible Gaussian inputs.
-*   **In Learning:**
-    *   Only vision input is active (temporary Gaussians).
-    *   Robot feedback and voice inputs are zero/unused.
-*   **In Recall:**
-    *   Vision input (temporary).
-    *   Robot feedback (permanent, accumulates).
-    *   Human voice (permanent, accumulates).
-*   **Publishes:** `/dnf_inputs` (3-part array: [vision | robot | human]).
+*   **Role:** Aggregates vision detections, robot feedback, and human voice commands into unified DNF inputs.  
+*   **Publishes:** `/dnf_inputs` (`Float32MultiArray`, 3-part array: [vision | robot | human]).  
+*   **Subscribes:**  
+    *   `/object_detections` (vision-based object positions).  
+    *   `/simulation/robot_feedback` (automatic robot signals).  
+    *   `/manual_robot_feedback` (manual robot feedback for testing).  
+    *   `/parsed_voice_command` (human voice commands).  
+    *   `/response_command` (resets active human voice inputs (after error, so the next one is possible)).
