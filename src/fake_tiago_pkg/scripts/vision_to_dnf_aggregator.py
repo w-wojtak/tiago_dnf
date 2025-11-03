@@ -137,17 +137,17 @@ class VisionToDNFAggregator:
             self.main_publishing_timer.shutdown()
 
 
-    def calculate_movement(self, old_pos, new_pos):
-        dx = new_pos['x'] - old_pos['x']; dy = new_pos['y'] - old_pos['y']; dz = new_pos['z'] - old_pos['z']
-        return np.sqrt(dx**2 + dy**2 + dz**2)
+    # def calculate_movement(self, old_pos, new_pos):
+    #     dx = new_pos['x'] - old_pos['x']; dy = new_pos['y'] - old_pos['y']; dz = new_pos['z'] - old_pos['z']
+    #     return np.sqrt(dx**2 + dy**2 + dz**2)
 
-    def check_for_pickup(self, object_name, new_position):
-        if object_name not in self.last_positions:
-            self.last_positions[object_name] = new_position.copy(); return False
-        distance = self.calculate_movement(self.last_positions[object_name], new_position)
-        if distance > self.pickup_detection_threshold:
-            self.last_positions[object_name] = new_position.copy(); return True
-        return False
+    # def check_for_pickup(self, object_name, new_position):
+    #     if object_name not in self.last_positions:
+    #         self.last_positions[object_name] = new_position.copy(); return False
+    #     distance = self.calculate_movement(self.last_positions[object_name], new_position)
+    #     if distance > self.pickup_detection_threshold:
+    #         self.last_positions[object_name] = new_position.copy(); return True
+    #     return False
 
     def add_gaussian_input(self, object_name):
         if object_name not in self.object_positions: return
@@ -172,18 +172,37 @@ class VisionToDNFAggregator:
                     self.input_matrix2[self.current_time_index] += profile
         self.active_gaussians = active_gaussians_now
 
+    # def detection_callback(self, msg):
+    #     try:
+    #         detections = json.loads(msg.data).get('detections', [])
+    #         for detection in detections:
+    #             object_name = detection.get('object', 'Unknown')
+    #             if object_name not in self.object_positions: continue
+    #             if self.check_for_pickup(object_name, detection.get('position', {})) and object_name not in self.picked_up_objects:
+    #                 rospy.loginfo(f"PICKUP DETECTED: '{object_name}'")
+    #                 self.add_gaussian_input(object_name)
+    #                 self.picked_up_objects.add(object_name)
+    #     except Exception as e:
+    #         rospy.logerr(f"Error processing detection message: {e}")
+
     def detection_callback(self, msg):
+        """Detects the first appearance of a code instead of movement."""
         try:
             detections = json.loads(msg.data).get('detections', [])
             for detection in detections:
                 object_name = detection.get('object', 'Unknown')
-                if object_name not in self.object_positions: continue
-                if self.check_for_pickup(object_name, detection.get('position', {})) and object_name not in self.picked_up_objects:
-                    rospy.loginfo(f"PICKUP DETECTED: '{object_name}'")
+                if object_name not in self.object_positions:
+                    continue
+
+                # Trigger only once per object (on first appearance)
+                if object_name not in self.picked_up_objects:
+                    rospy.loginfo(f"******* PICKUP DETECTED: '{object_name}'")
                     self.add_gaussian_input(object_name)
                     self.picked_up_objects.add(object_name)
+
         except Exception as e:
             rospy.logerr(f"Error processing detection message: {e}")
+
 
 def main():
     try:
