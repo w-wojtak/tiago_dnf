@@ -32,6 +32,16 @@ class DNFRecallNode:
         self.input_positions = [-60, -20, 20, 40]
         self.input_indices = [np.argmin(np.abs(self.x - pos)) for pos in self.input_positions]
 
+        # Object mapping
+        object_positions = [-60, -40, -20, 0, 20, 40, 60]
+        object_labels = ['base', 'blue box', 'load', 'tool 1', 'bearing', 'motor', 'tool 2']
+
+        # Keep only relevant ones
+        self.object_map = {
+            pos: label for pos, label in zip(object_positions, object_labels)
+            if label in ['base', 'load', 'bearing', 'motor']
+        }
+
         self.u_sm_history = []  # list of lists (each timestep)
         self.u_d_history = []
 
@@ -44,7 +54,8 @@ class DNFRecallNode:
         rospy.loginfo("Recall node initialized. Timer started.")
 
         # Publisher for threshold crossings
-        self.publisher = rospy.Publisher('threshold_crossings', Float32MultiArray, queue_size=10)
+        # self.publisher = rospy.Publisher('threshold_crossings', Float32MultiArray, queue_size=10)
+        self.publisher = rospy.Publisher('threshold_crossings', String, queue_size=10)
 
         self.response_pub = rospy.Publisher('/response_command', String, queue_size=5)
 
@@ -315,12 +326,18 @@ class DNFRecallNode:
                 if not self.threshold_crossed[pos] and self.u_act[idx] > self.theta_act:
                     rospy.loginfo(
                     f"[{elapsed_time:.2f}s | Sim Time: {current_sim_time:.1f}s] "
-                    f"PREDICTION: Threshold crossed at position {pos} (u_act={self.u_act[idx]:.2f})"
+                    f"***** PREDICTION: Threshold crossed at position {pos} (u_act={self.u_act[idx]:.2f})"
                     )
-                    msg = Float32MultiArray()
-                    msg.data = [float(pos)]
+                    # msg = Float32MultiArray()
+                    # msg.data = [float(pos)]
+                    # self.publisher.publish(msg)
+                    # self.threshold_crossed[pos] = True
+
+                    label = self.object_map.get(pos, str(pos))
+                    msg = String(data=label)
                     self.publisher.publish(msg)
                     self.threshold_crossed[pos] = True
+                    rospy.loginfo(f"***** Published threshold crossing for object: {label}")
 
 
             # # Map input_positions to object labels
