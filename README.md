@@ -5,8 +5,8 @@
 *   Python 3
 *   `rospy`, `numpy`, `scipy`
 *   `matplotlib` (for plotting and visualization; requires a GUI backend such as `TkAgg` or `Qt5Agg`)
-*   `ar_track_alvar`: The `fake_ar_publisher_node` publishes messages of this type to simulate the real `ar_track_alvar` package.
-
+*   `ar_track_alvar`: The `fake_ar_publisher_node` publishes messages of this type to simulate the real `ar_track_alvar` package. This is only required for simulating QR code detection.
+ 
 ### Phase 1: Learning the Task
 
 This phase runs a simulation where a human demonstrator performs the assembly task. The DNF system observes these actions and learns the sequence and timing.
@@ -17,72 +17,92 @@ This phase runs a simulation where a human demonstrator performs the assembly ta
 
 What it does: Observes a pre-scripted demonstration of an assembly task.
 Output: Saves the learned memory files (`u_sm_TIMESTAMP.npy` and` u_d_TIMESTAMP.npy`) into the `data_basic/` directory. 
+
+**There are three available learning scenarios:
+
+1. Robot’s Temporal Adaptation — Run using the dnf_learning_pipeline.launch file.
+The standard setup using simulated QR code detections.
+
+2. Extended Architecture (with Error Detection) — Run using the dnf_learning_extended_pipeline.launch file.
+Includes the additional error detection mechanism integrated into the DNF architecture.
+
+3. Simulated Learning (No External Inputs) — Run using the dnf_learning_simulated.launch file.
+Runs the learning process with predefined inputs specified in a file. This mode does not connect to any QR code simulation or real sensors and is useful for testing or visualizing how the learning mechanism works in isolation.
+
+
 ### Phase 2: Recalling the Task
-This phase uses the learned memory to predict and execute the assembly task. It can be run in two different modes using a launch argument.
 
-#### Mode 1: Simple Simulation (Default)
-This mode is for quickly testing the DNF's prediction logic without simulating the robot's  movements.
+In this phase, the system uses the learned memory from **Phase 1** to predict and execute the assembly task. The recall phase reproduces the learned sequence and timing to drive robot actions, either in simulation or on the real robot.
 
-How it works: Uses `simulated_task_executive.py`, which simply waits for a fixed time (time.sleep()) to simulate a robot action.
+---
 
-To Run:
+#### 1. Simulation Mode (Default)
+
+This mode is used for quickly testing the DNF’s prediction and recall logic without involving real robot movements or complex communication pipelines.
+
+**How it works:**
+Uses `simulated_task_executive.py`, which waits for fixed time intervals (`time.sleep()`) to simulate robot actions. This allows you to verify that the DNF correctly recalls the learned sequence and generates predictions as expected.
+
+**To run:**
+
 ```bash
-# This is the default mode
+# Default recall mode (no real robot interaction)
 roslaunch fake_tiago_pkg dnf_recall_pipeline.launch
 ```
 
-#### Mode 2: Realistic Tiago Simulation
-This mode is for testing the full robot integration logic before deploying on the real hardware.
+You can also choose among several simulation configurations depending on the scenario:
 
-How it works: It uses two nodes to simulate the real system:
-* `tiago_task_executive.py` (The "Bridge"): Translates DNF predictions into robot commands (e.g., "move arm," "close gripper").
-* `fake_robot_controller.py` (The "Stunt Double"): Pretends to be the real robot. It receives commands, simulates the time it takes to move, and sends back pose feedback.
+* **Temporal Adaptation:**
 
-To Run:
-```bash
-roslaunch fake_tiago_pkg dnf_recall_pipeline.launch mode:=tiago
-```
+  ```bash
+  roslaunch fake_tiago_pkg dnf_recall_simple.launch
+  ```
+* **Extended Architecture (with Error Detection):**
 
-### Running on the Real Tiago Robot
-Integrating the system with the real Tiago robot should be straightforward.
+  ```bash
+  roslaunch fake_tiago_pkg dnf_recall_extended.launch
+  ```
+* **Without Voice Inputs:**
+  Versions of the above that do not use real or simulated voice commands are available as:
 
-#### Step 1: Configure Object Positions (Required for Hardware Integration)
-For the system to work on the hardware, the real-world coordinates of the assembly objects need to be configured. This is the only code modification required.
+  ```bash
+  roslaunch fake_tiago_pkg dnf_recall_novoice_pipeline.launch
+  roslaunch fake_tiago_pkg dnf_recall_extended_novoice_pipeline.launch
+  ```
 
-* File to Edit: `fake_tiago_pkg/scripts/tiago_task_executive.py`
-* Action: The `OBJECT_POSES` dictionary needs to be updated with the correct `(x, y, z)` values for each object, relative to Tiago's `base_link` frame.
+---
 
-```python
-# In tiago_task_executive.py, inside the __init__ method:
-self.OBJECT_POSES = {
-    # These placeholder values need to be replaced with measured coordinates
-    'base':    Pose(position=Point(x=0.5, y= 0.3, z=0.1), ...),
-    'load':    Pose(position=Point(x=0.5, y= 0.1, z=0.1), ...),
-    # ... and so on for other objects
-}
-```
+#### 2. Running on the Real Tiago Robot
 
-#### Step 2: Configure the Vision System
-The simulation uses `fake_ar_publisher` to mimic the `ar_track_alvar` package by publishing fake` ar_track_alvar_msgs/AlvarMarkers` to the `/ar_pose_marker` topic.
+When deploying on the real Tiago, the main difference is that **no “fake” input or output nodes** should be used. Instead, the DNF system must connect directly to the appropriate **ROS topics** used by the real robot’s perception and control stacks.
 
-For the real robot, this simulation node needs to be replaced by the actual perception stack. 
+**Integration guidelines:**
 
-#### Step 3: Launch the Nodes
-In the main launch file that starts the Tiago drivers and OpenSOT, the DNF nodes need to be included.
+* **Perception:**
+  In simulation, QR-code detection is mimicked using the `fake_ar_publisher` node, which publishes `ar_track_alvar_msgs/AlvarMarkers` messages to `/ar_pose_marker`.
+  On the real robot, this node should be **disabled**, and the DNF should instead subscribe to the corresponding topic published by the **real perception system** (e.g., ZED camera or Tiago’s onboard vision).
 
-```xml
-<!-- Add these nodes to your main Tiago launch file -->
+* **Control:**
+  In simulation, robot actions are represented by simple time delays or fake controllers.
+  On the real robot, these should be replaced by the actual control interface.
+  The DNF output nodes must **publish robot commands** (e.g., arm trajectories, gripper control, or task triggers) to the appropriate ROS topics expected by the **Tiago control stack** (e.g., OpenSOT or MoveIt).
 
-<!-- The DNF Brain -->
-<node name="dnf_recall_node" pkg="fake_tiago_pkg" type="dnf_model_recall_simple_node.py" output="screen" />
+* **Launch configuration:**
+  You can integrate the DNF nodes into the Tiago’s main launch file alongside its drivers and control framework:
 
-<!-- The Bridge to your robot controller -->
-<node name="tiago_task_executive" pkg="fake_tiago_pkg" type="tiago_task_executive.py" output="screen" />
+  ```xml
+  <!-- Example addition to Tiago’s main launch file -->
 
-<!-- Plus the vision pipeline nodes (vision_to_dnf, etc.) -->
-```
+  <!-- The DNF Recall Node -->
+  <node name="dnf_recall_node" pkg="fake_tiago_pkg" type="dnf_model_recall_simple_node.py" output="screen" />
 
-**IMPORTANT**: The `fake_robot_controller.py` node should not be launched when running on the real robot, as the OpenSOT stack provides the real control and feedback.
+  <!-- Vision-to-DNF and other interface nodes as required -->
+  ```
+
+**Important:**
+Do **not** launch any “fake” publishers or simulated controllers (e.g., `fake_robot_controller.py`, `fake_ar_publisher`, etc.) when running on the real robot. The DNF should operate solely on the live sensory input and control output topics defined in the Tiago environment.
+
+
 
 
 ### OVERVIEW OF NODES
@@ -170,44 +190,6 @@ Otherwise, it logs a warning and ignores the message.
 The **Task Executive Node** listens for DNF-predicted action triggers and coordinates simulated robot behavior accordingly.  
 When a DNF prediction is received, it identifies which object the prediction refers to based on a predefined spatial mapping (`DNF_POS_TO_OBJECT`), then simulates the robot’s response with a time delay.
 
-
-#### tiago_task_executive_node
-
-*   **Role:** A **realistic "bridge"** to a real or simulated robot controller.
-*   **Key Feature:** Translates a DNF prediction into a multi-step sequence (e.g., move-down, grasp, lift-up).
-*   **Mode:** Used when `mode:=tiago`.
-*   **Subscribes:**  
-    * `threshold_crossings` (`Float32MultiArray`) – DNF action predictions.  
-    * `/cartesian/right_arm/pose` (`PoseStamped`) – real-time robot arm pose feedback.  
-    * `/manual_robot_feedback` (`String`) – allows manual triggering of feedback messages.  
-*   **Publishes:**  
-    * `/dxl_input/pos_right` (`PoseStamped`) – target arm poses for movement.  
-    * `/dxl_input/gripper_right` (`PointStamped`) – gripper open/close commands.  
-    * `/simulation/robot_pickup` (`String`) – notifies the vision system that an object has been picked up.  
-    * `/simulation/robot_feedback` (`String`) – provides robot feedback to the DNF.  
-
-**Description:**  
-The **TIAGo Task Executive Node** coordinates arm and gripper control for object pickup actions triggered by DNF predictions.  
-When a threshold crossing occurs, it maps the DNF position to an object, retrieves the corresponding 3D pose, and executes a predefined pickup sequence:  
-1. Move to pre-grasp height.  
-2. Approach and grasp the object.  
-3. Return to home position.  
-
-Feedback (to both the DNF and the vision system) is sent **manually** or automatically if `automatic_robot_feedback = True`.
-
-
-#### fake_robot_controller_node
-
-*   **Role:** A **"stunt double"** for the real Tiago robot. Simulates a simple robot arm and gripper for testing  task logic. 
-*   **Why Recall Only:** Simulates the robot's physical body and low-level controller.
-*   **Key Feature:** Listens for commands from `tiago_task_executive`, waits for a simulated time, and publishes fake pose feedback.
-*   **Mode:** Used when `mode:=tiago`.
-*   **Important:** This node should **NOT** be used with the real robot, as the robot's own drivers serve this purpose.
-*   **Subscribes:**  
-    * `/dxl_input/pos_right` (`PoseStamped`) – target arm pose commands.  
-    * `/dxl_input/gripper_right` (`PointStamped`) – gripper open/close commands.  
-*   **Publishes:**  
-    * `/cartesian/right_arm/pose` (`PoseStamped`) – continuous simulated arm pose feedback. 
 
 
 
