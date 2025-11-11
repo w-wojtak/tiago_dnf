@@ -18,7 +18,7 @@ This phase runs a simulation where a human demonstrator performs the assembly ta
 What it does: Observes a pre-scripted demonstration of an assembly task.
 Output: Saves the learned memory files (`u_sm_TIMESTAMP.npy` and` u_d_TIMESTAMP.npy`) into the `data_basic/` directory. 
 
-**There are three available learning scenarios:
+**There are three available learning scenarios:**
 
 1. Robot’s Temporal Adaptation — Run using the dnf_learning_pipeline.launch file.
 The standard setup using simulated QR code detections.
